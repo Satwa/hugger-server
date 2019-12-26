@@ -69,16 +69,54 @@ server.register([
     }
 ], (err) => {
     if(err) throw err
+    server.auth.strategy('firebase', 'firebase', { firebaseAdmin })
 
-    
-
-    server.auth.strategy('firebase', 'firebase', {
-        firebaseAdmin
+    server.route({
+        method: 'GET',
+        path: '/auth',
+        config: {
+            auth: 'firebase'
+        },
+        handler: (req, reply) => {
+            reply({ text: "Authentication OK." })
+        }
     })
 
-    // server.route({
+    server.route({
+        method: 'POST',
+        path: '/user',
+        config: {
+            auth: {
+                strategy: 'firebase',
+                mode: 'optional'
+            }
+        },
+        handler: (req, reply) => {
+            const data = req.payload
+        }
+    })
 
-    // })
+    server.route({
+        method: 'GET',
+        path: '/user',
+        config: {
+            auth: 'firebase'
+        },
+        handler: (req, reply) => {
+            // TODO
+        }
+    })
+
+    server.route({
+        method: 'POST',
+        path: '/user/edit',
+        config: {
+            auth: 'firebase'
+        },
+        handler: (req, reply) => {
+            // TODO
+        }
+    })
 
     server.start(() => console.log("Server up and running on port " + process.env.PORT))
 })
@@ -89,6 +127,9 @@ server.register([
 headers: {
     'Authorization': `Bearer ${idToken}`
 }
+var socket = io.connect('http://localhost:3000', {
+  query: {token: token}
+})
 
 /////
 
