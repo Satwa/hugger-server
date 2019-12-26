@@ -1,0 +1,38 @@
+{
+  "name": "hugger-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Satwa/hugger-server.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Satwa/hugger-server/issues"
+  },
+  "homepage": "https://github.com/Satwa/hugger-server#readme",
+  "dependencies": {
+    "assert": "^1.4.1",
+    "boom": "^5.2.0",
+    "dotenv": "^8.2.0",
+    "firebase-admin": "^8.9.0",
+    "hapi": "^16.4.3",
+    "hapi-auth-firebase": "^1.0.4",
+    "hapi-auth-jwt2": "^7.3.0",
+    "inert": "^4.2.1",
+    "joi": "^10.6.0",
+    "jsonwebtoken": "^8.5.1",
+    "mysql": "^2.17.1",
+    "pg": "^7.15.2",
+    "pg-hstore": "^2.3.3",
+    "sequelize": "^5.21.3",
+    "socket.io": "^2.3.0",
+    "socket.io-client": "^2.3.0",
+    "sqlite3": "^4.1.1"
+  }
+}
