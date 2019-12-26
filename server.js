@@ -7,6 +7,10 @@ const Sequelize = require('sequelize')
 const sequelize 	= new Sequelize(process.env.DATABASE_URL, { logging: process.env.DATABASE_SHOW_LOG === "true" })
 const firebaseAdmin = require("firebase-admin")
 
+firebaseAdmin.initializeApp({
+    credential: firebaseAdmin.credential.cert(require("./project-hifive-firebase-adminsdk.json")),
+})
+
 const User = sequelize.define("users", {
     authorized: {
         type: Sequelize.BOOLEAN,
@@ -57,9 +61,16 @@ server.register([
     require('./hapi-firebase-auth'),
 
     // ROUTES
-    require('./live')
+    {
+        register: require('./live'),
+        options: {
+            firebaseAdmin: firebaseAdmin
+        }
+    }
 ], (err) => {
     if(err) throw err
+
+    
 
     server.auth.strategy('firebase', 'firebase', {
         firebaseAdmin
