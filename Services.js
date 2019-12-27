@@ -3,6 +3,10 @@ const sequelize         = new Sequelize(process.env.DATABASE_URL, { logging: pro
 
 
 const User = sequelize.define("users", {
+    authID: {
+        type: Sequelize.STRING, // ID given by Firebase when authenticating
+        primaryKey: true
+    },
     authorized: {
         type: Sequelize.BOOLEAN,
         defaultValue: false // false for hugger but true for huggy
@@ -17,23 +21,24 @@ const User = sequelize.define("users", {
     sex: Sequelize.STRING,
     story: Sequelize.STRING,
     type: Sequelize.STRING,
-    authID: Sequelize.STRING, // ID given by Firebase when authenticating
     deviceToken: Sequelize.STRING
 })
 
 const Chat = sequelize.define("chats", {
-    user1: Sequelize.INTEGER,
-    user2: Sequelize.INTEGER
+    user1: Sequelize.STRING,
+    user2: Sequelize.STRING
 })
 
 const Message = sequelize.define("messages", {
-    // chat_id: Sequelize.INTEGER,
-    message: Sequelize.STRING,
-    sender: Sequelize.INTEGER
+    message: Sequelize.STRING
 })
 
+Chat.belongsTo(User, { foreignKey: "user1", as: "hugger" })
+Chat.belongsTo(User, { foreignKey: "user2", as: "huggy" })
 Chat.hasMany(Message, { foreignKey: "chat_id" })
 Message.belongsTo(Chat, { foreignKey: "chat_id" })
+User.hasMany(Message, { foreignKey: "sender_id" })
+Message.belongsTo(User, { foreignKey: "sender_id" })
 
 User.sync()
 Chat.sync()
