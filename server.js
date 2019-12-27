@@ -26,7 +26,7 @@ const User = sequelize.define("users", {
     sex: Sequelize.STRING,
     story: Sequelize.STRING,
     type: Sequelize.STRING,
-    authID: Sequelize.STRING, // Id given by Firebase when authenticating
+    authID: Sequelize.STRING, // ID given by Firebase when authenticating
     deviceToken: Sequelize.STRING
 })
 
@@ -92,7 +92,13 @@ server.register([
         },
         handler: (req, reply) => {
             const data = req.payload
-            console.log(data)
+
+            User.build(data)
+                .save()
+                .then((res) => {
+                    reply(true)
+                })
+                .catch((err) => console.log(err))
         }
     })
 
