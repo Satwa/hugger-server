@@ -13,16 +13,16 @@ exports.register = function (server, options, next) {
                     socket.decoded = user
                     next()
                 }catch(err){
-                    console.log("LIVE API: Unauthorized user tried to access the API")
+                    console.log("[DEBUG] LIVE API: Unauthorized user tried to access the API")
                     next(new Error("Authentication error"))
                 }
             }else{
-                console.log("LIVE API: Unauthorized user tried to access the API")
+                console.log("[DEBUG] LIVE API: Unauthorized user tried to access the API")
                 next(new Error("Authentication error"))
             }
         })
         .on('connection', function (socket) {
-            console.log('New connection!')
+            console.log('[DEBUG] LIVE API: New connection!')
 
             socket.on('hello', Handlers.hello)
             socket.on('newMessage', Handlers.newMessage)

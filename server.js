@@ -26,7 +26,8 @@ const User = sequelize.define("users", {
     sex: Sequelize.STRING,
     story: Sequelize.STRING,
     type: Sequelize.STRING,
-    authID: Sequelize.STRING // Id given by Firebase when authenticating
+    authID: Sequelize.STRING, // Id given by Firebase when authenticating
+    deviceToken: Sequelize.STRING
 })
 
 const Chat = sequelize.define("chats", {
@@ -59,8 +60,6 @@ server.connection({
 
 server.register([
     require('./hapi-firebase-auth'),
-
-    // ROUTES
     {
         register: require('./live'),
         options: {
@@ -93,6 +92,23 @@ server.register([
         },
         handler: (req, reply) => {
             const data = req.payload
+            console.log(data)
+        }
+    })
+
+    server.route({
+        method: 'GET',
+        path: '/user/exists/{id}',
+        config: {
+            auth: 'firebase'
+        },
+        handler: async (req, reply) => {
+            const user = await User.findOne({ where: { authID: req.params.id } })
+
+            const res = {}
+            res[req.params.id] = !!user
+            console.log(res)
+            reply(res)
         }
     })
 
