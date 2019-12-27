@@ -3,6 +3,10 @@ const { Sequelize, Op } = require('sequelize')
 const sequelize 	    = new Sequelize(process.env.DATABASE_URL, { logging: process.env.DATABASE_SHOW_LOG === "true" })
 
 const User = sequelize.define("users", {
+    authID: {
+        type: Sequelize.STRING, // ID given by Firebase when authenticating
+        primaryKey: true
+    },
     authorized: {
         type: Sequelize.BOOLEAN,
         defaultValue: false // false for hugger but true for huggy
@@ -17,23 +21,24 @@ const User = sequelize.define("users", {
     sex: Sequelize.STRING,
     story: Sequelize.STRING,
     type: Sequelize.STRING,
-    authID: Sequelize.STRING, // ID given by Firebase when authenticating
     deviceToken: Sequelize.STRING
 })
 
 const Chat = sequelize.define("chats", {
-    user1: Sequelize.INTEGER,
-    user2: Sequelize.INTEGER
+    user1: Sequelize.STRING,
+    user2: Sequelize.STRING
 })
 
 const Message = sequelize.define("messages", {
-    // chat_id: Sequelize.INTEGER,
-    message: Sequelize.STRING,
-    sender: Sequelize.INTEGER
+    message: Sequelize.STRING
 })
 
+Chat.belongsTo(User, { foreignKey: "user1", as: "hugger" })
+Chat.belongsTo(User, { foreignKey: "user2", as: "huggy" })
 Chat.hasMany(Message, { foreignKey: "chat_id" })
 Message.belongsTo(Chat, { foreignKey: "chat_id" })
+User.hasMany(Message, { foreignKey: "sender_id" })
+Message.belongsTo(User, { foreignKey: "sender_id" })
 
 User.sync()
 Chat.sync()
@@ -61,21 +66,49 @@ exports.register = function (server, options, next) {
                 next(new Error("Authentication error"))
             }
         })
-        .on('connection', function (socket) {
-            console.log('[DEBUG] LIVE API: New connection!')
+        .on('connection', async function (socket) {
+            console.log('[DEBUG] LIVE API: New connection')
+
+            const user = await User.findOne({ where: { authID: socket.decoded.user_id } })
+            const chatrooms = await Chat.findAll({
+                attributes: ["id"],
+                where: {
+                    [Op.or]: [
+                        { user1: socket.decoded.user_id },
+                        { user2: socket.decoded.user_id },
+                    ]
+                },
+                include: [Message, { model: User, as: "hugger" }, { model: User, as: "huggy" }]
+            })
+            
+            socket.user = user
+            socket.chatrooms = chatrooms
+            for(const chatroom of chatrooms){ // Attach socket to every chatrooms it belongs to
+                socket.join("chatroom" + chatroom.id)
+            }
 
             socket.on('moodUpdate', (data) => {
-                User.findOne({ where: { authID: socket.decoded.user_id } })
-                    .then((user) => {
-                        user.update({
-                            picture: data.picture
-                        })
-                    })
-                // TODO: Emit to hugger
+                // console.log(socket)
+                socket.user.update({
+                    picture: data.picture
+                })
+                console.log("mood update")
+                // Once updated, send to the chatroom
+                io.to("chatroom" + socket.chatrooms[0].id).emit("moodUpdated", { room: "chatroom" + socket.chatrooms[0].id, picture: data.picture })
             })
 
-            // socket.on('newMessage', Handlers.newMessage)
-            // socket.on('goodbye', Handlers.goodbye)
+            socket.on("chatList", () => {
+                // Hugger here, we need to send them the accurate data
+                socket.emit("chatListData", chatrooms.map($0 => $0.dataValues))
+                // console.log(chatrooms.map($0 => $0.dataValues))
+            })
+
+            socket.on("sendMessage", (data) => {
+                // TODO: Save data in database
+                io.to(data.room).emit("newMessage", {
+                    message: data
+                })
+            })
         })
 
     next()
@@ -84,3 +117,5 @@ exports.register = function (server, options, next) {
 exports.register.attributes = {
     name: 'hugger-live-api'
 }
+
+// TODO: Sockets are authenticated but we're not sure user has rights to send data to specific room
