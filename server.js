@@ -3,7 +3,7 @@ require('dotenv').config()
 const Hapi      = require("hapi")
 const Boom      = require("boom")
 const hapiJWT   = require("hapi-auth-jwt2")
-const Sequelize = require('sequelize')
+const { Sequelize, Op } = require('sequelize')
 const sequelize 	= new Sequelize(process.env.DATABASE_URL, { logging: process.env.DATABASE_SHOW_LOG === "true" })
 const firebaseAdmin = require("firebase-admin")
 
@@ -114,12 +114,56 @@ server.register([
 
     server.route({
         method: 'GET',
-        path: '/user',
+        path: '/user/me',
         config: {
             auth: 'firebase'
         },
-        handler: (req, reply) => {
-            // TODO
+        handler: async (req, reply) => {
+            const user = await User.findOne({ where: { authID: req.auth.credentials.user_id } })
+            console.log(user)
+            reply(JSON.stringify(user))
+        }
+    })
+
+    server.route({
+        method: 'GET',
+        path: '/user/{id}',
+        config: {
+            auth: 'firebase'
+        },
+        handler: async (req, reply) => {
+            // TODO: Check if req.auth.credentials.user_id has any link with req.params.id by checking Chat model
+            try{
+                // Check if requester has access to requested by looking for chat relation
+                    // If true, link is proved so we grant access to profile
+                const chatExists = await Chat.findOne({ 
+                    where: { 
+                        [Op.or]: [
+                            {
+                                [Op.and]: [
+                                    { user1: req.auth.credentials.user_id }, 
+                                    { user2: req.params.id }
+                                ]
+                            },
+                            {
+                                [Op.and]: [
+                                    { user2: req.auth.credentials.user_id },
+                                    { user1: req.params.id },
+                                ]
+                            }
+                        ]
+                    } 
+                })
+                if(chatExists){ // TODO: query by authID only
+                    const user = await User.findOne({ where: { [Op.or]: [{ authID: req.params.id }, { id: req.params.id }] } })
+                    reply(JSON.stringify(user)) // TODO: This is not secure, some fields should not be shared publicly
+                }else{
+                    reply(Boom.unauthorized())
+                }
+            }catch(err){
+                console.log(err)
+                reply(Boom.internal())
+            }
         }
     })
 
@@ -138,28 +182,9 @@ server.register([
 })
 
 
-
-/*
-headers: {
-    'Authorization': `Bearer ${idToken}`
-}
-var socket = io.connect('http://localhost:3000', {
-  query: {token: token}
-})
-
-/////
-
-request.auth.credentials
-*/
-
 /*
 
 SOLID API:
- - /auth/verify
-  - Check if token is ok (basically demo key)
- - /user
-  - /me
-    - Get my data + my chats (w/ huggies)
   - /edit
     - Update and send to Firebase
 
