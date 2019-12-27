@@ -6,6 +6,7 @@ const hapiJWT   = require("hapi-auth-jwt2")
 const { Sequelize, Op } = require('sequelize')
 const sequelize 	= new Sequelize(process.env.DATABASE_URL, { logging: process.env.DATABASE_SHOW_LOG === "true" })
 const firebaseAdmin = require("firebase-admin")
+const Services = require("./Services")
 
 firebaseAdmin.initializeApp({
     credential: firebaseAdmin.credential.cert(require("./project-hifive-firebase-adminsdk.json")),
@@ -96,6 +97,7 @@ server.register([
             User.build(data)
                 .save()
                 .then((res) => {
+                    Services.assignHuggerToHuggy(data)
                     reply(true)
                 })
                 .catch((err) => console.log(err))
@@ -208,8 +210,6 @@ LIVE API:
 
 Microservices :
  - Push Notifications
- - Affect hugger to huggy
- - Firebase JWT (already handled?)
  - Firebase Storage
 
  - quickActions Triggerer (text analysis)
