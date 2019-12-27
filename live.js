@@ -78,6 +78,7 @@ exports.register = function (server, options, next) {
                         { user2: socket.decoded.user_id },
                     ]
                 },
+                order: [[Message, "createdAt", "desc"]],
                 include: [Message, { model: User, as: "hugger" }, { model: User, as: "huggy" }]
             })
             
@@ -92,7 +93,6 @@ exports.register = function (server, options, next) {
                 socket.user.update({
                     picture: data.picture
                 })
-                console.log("mood update")
                 // Once updated, send to the chatroom
                 io.to("chatroom" + socket.chatrooms[0].id).emit("moodUpdated", { room: "chatroom" + socket.chatrooms[0].id, picture: data.picture })
             })
@@ -100,14 +100,25 @@ exports.register = function (server, options, next) {
             socket.on("chatList", () => {
                 // Hugger here, we need to send them the accurate data
                 socket.emit("chatListData", chatrooms.map($0 => $0.dataValues))
-                // console.log(chatrooms.map($0 => $0.dataValues))
             })
 
             socket.on("sendMessage", (data) => {
-                // TODO: Save data in database
-                io.to(data.room).emit("newMessage", {
-                    message: data
-                })
+                console.log("sendMessage")
+                Message
+                    .build({
+                        message: data.message,
+                        chat_id: data.room.replace("chatroom", ""),
+                        sender_id: socket.decoded.user_id
+                    })
+                    .save()
+                    .then((res) => {
+                        io.sockets.to(data.room).emit("newMessage", {
+                            id: res.id,
+                            room: data.room,
+                            message: data.message,
+                            createdAt: data.createdAt
+                        })
+                    })
             })
         })
 
