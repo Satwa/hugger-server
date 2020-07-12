@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/Satwa/hugger-server#readme",
   "dependencies": {
-    "assert": "^1.4.1",
+    "assert": "^2.0.0",
     "boom": "^5.2.0",
     "dotenv": "^8.2.0",
     "firebase-admin": "^8.9.0",
